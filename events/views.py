@@ -1,5 +1,7 @@
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from django_filters import rest_framework as filters
 
+from events.filters import EventFilterSet
 from events.models import Error, Event
 from events.serializers import ErrorSerializer, EventSerializer
 
@@ -7,6 +9,8 @@ from events.serializers import ErrorSerializer, EventSerializer
 class EventModelViewSet(ModelViewSet):
     queryset = Event.objects.select_for_update().all()
     serializer_class = EventSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = EventFilterSet
 
     def get_queryset(self):
         if self.action in ('list', 'retrieve'):
