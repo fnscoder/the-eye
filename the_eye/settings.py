@@ -43,6 +43,9 @@ INSTALLED_APPS = [
 
     # third part apps
     'rest_framework',
+
+    # local apps
+    'events',
 ]
 
 MIDDLEWARE = [
