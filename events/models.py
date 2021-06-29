@@ -13,7 +13,7 @@ class Event(models.Model):
     category = models.CharField('category', max_length=50)
     name = models.CharField('name', max_length=150)
     data = models.JSONField('payload data')
-    timestamp = models.DateTimeField('event datetime', auto_now_add=True)
+    timestamp = models.DateTimeField('event datetime')
 
     def __str__(self):
         return f'{self.name}'

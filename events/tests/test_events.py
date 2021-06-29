@@ -1,26 +1,29 @@
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase, APIRequestFactory
 
-from events.models import Event
+from events.models import Event, Session
 from events.views import EventModelViewSet
 
 
 class EventModelViewSetTestCase(APITestCase):
     def setUp(self):
+        session = Session.objects.create(id='e2085be5-9137-4e4e-80b5-f1ffddc25423')
         self.event = Event.objects.create(
-            session_id='e2085be5-9137-4e4e-80b5-f1ffddc25423',
+            session=session,
             category='page interaction',
             name='pageview',
             data={
                 "host": "www.consumeraffairs.com",
                 "path": "/",
             },
+            timestamp=timezone.now()
         )
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.pk})
         self.new_event_data = {
-            'session_id': 'e2085be5-9137-4e4e-80b5-f1ffddc25423',
+            'session': {"id": 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
             'category': 'page interaction',
             'name': 'cta click',
             'data': {
@@ -28,6 +31,7 @@ class EventModelViewSetTestCase(APITestCase):
                 "path": "/",
                 "element": "chat bubble"
             },
+            'timestamp': timezone.now()
         }
         self.factory = APIRequestFactory()
 
@@ -46,13 +50,14 @@ class EventModelViewSetTestCase(APITestCase):
                 "host": "www.consumeraffairs.com",
                 "path": "/",
                 "element": "chat bubble"
-            }
+            },
+            'timestamp': timezone.now()
         }
         request = self.factory.post(self.list_url, data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['session_id'][0], 'This field is required.')
+        self.assertEqual(response.data['session'][0], 'This field is required.')
 
     def test_list_events(self):
         request = self.factory.post(self.list_url, self.new_event_data, format='json')
