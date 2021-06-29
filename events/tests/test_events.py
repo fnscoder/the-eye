@@ -1,9 +1,11 @@
+from datetime import timedelta
+
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase, APIRequestFactory
 
-from events.models import Event, Session
+from events.models import Event, Session, Error
 from events.views import EventModelViewSet
 
 
@@ -15,21 +17,21 @@ class EventModelViewSetTestCase(APITestCase):
             category='page interaction',
             name='pageview',
             data={
-                "host": "www.consumeraffairs.com",
-                "path": "/",
+                'host': 'www.consumeraffairs.com',
+                'path': '/',
             },
             timestamp=timezone.now()
         )
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.pk})
         self.new_event_data = {
-            'session': {"id": 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
+            'session': {'id': 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
             'category': 'page interaction',
             'name': 'cta click',
             'data': {
-                "host": "www.consumeraffairs.com",
-                "path": "/",
-                "element": "chat bubble"
+                'host': 'www.consumeraffairs.com',
+                'path': '/',
+                'element': 'chat bubble'
             },
             'timestamp': timezone.now()
         }
@@ -47,9 +49,9 @@ class EventModelViewSetTestCase(APITestCase):
             'category': 'page interaction',
             'name': 'cta click',
             'data': {
-                "host": "www.consumeraffairs.com",
-                "path": "/",
-                "element": "chat bubble"
+                'host': 'www.consumeraffairs.com',
+                'path': '/',
+                'element': 'chat bubble'
             },
             'timestamp': timezone.now()
         }
@@ -58,6 +60,64 @@ class EventModelViewSetTestCase(APITestCase):
         response = view(request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['session'][0], 'This field is required.')
+
+    def test_create_event_future_timestamp(self):
+        data = {
+            'session': {'id': 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
+            'category': 'page interaction',
+            'name': 'cta click',
+            'data': {
+                'host': 'www.consumeraffairs.com',
+                'path': '/',
+                'element': 'chat bubble'
+            },
+            'timestamp': timezone.now() + timedelta(1)
+        }
+        initial_errors = Error.objects.all().count()
+        self.assertEqual(initial_errors, 0)
+        request = self.factory.post(self.list_url, data, format='json')
+        view = EventModelViewSet.as_view({'post': 'create'})
+        response = view(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['timestamp'][0], 'The timestamp can\'t be greater than now.')
+        final_errors = Error.objects.all().count()
+        self.assertEqual(final_errors, 1)
+
+    def test_create_event_empty_data(self):
+        data = {
+            'session': {'id': 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
+            'category': 'page interaction',
+            'name': 'cta click',
+            'data': {},
+            'timestamp': timezone.now()
+        }
+        initial_errors = Error.objects.all().count()
+        self.assertEqual(initial_errors, 0)
+        request = self.factory.post(self.list_url, data, format='json')
+        view = EventModelViewSet.as_view({'post': 'create'})
+        response = view(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['data'][0], 'The data can\' be empty.')
+        final_errors = Error.objects.all().count()
+        self.assertEqual(final_errors, 1)
+
+    def test_create_event_invalid_data(self):
+        data = {
+            'session': {'id': 'e2085be5-9137-4e4e-80b5-f1ffddc25423'},
+            'category': 'page interaction',
+            'name': 'cta click',
+            'data': 'invalid data',
+            'timestamp': timezone.now()
+        }
+        initial_errors = Error.objects.all().count()
+        self.assertEqual(initial_errors, 0)
+        request = self.factory.post(self.list_url, data, format='json')
+        view = EventModelViewSet.as_view({'post': 'create'})
+        response = view(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['data'][0], 'The data content must a JSON format.')
+        final_errors = Error.objects.all().count()
+        self.assertEqual(final_errors, 1)
 
     def test_list_events(self):
         request = self.factory.post(self.list_url, self.new_event_data, format='json')

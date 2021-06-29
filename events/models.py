@@ -26,3 +26,16 @@ class Event(models.Model):
 class Session(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField('created at', auto_now_add=True)
+
+
+class Error(models.Model):
+    data = models.JSONField('payload error data', null=True, blank=True)
+    message = models.CharField('error message', max_length=150, null=True, blank=True)
+    created_at = models.DateTimeField('created at', auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.message}'
+
+    class Meta:
+        verbose_name = 'error'
+        verbose_name_plural = 'errors'
