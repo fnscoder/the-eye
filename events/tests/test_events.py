@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase, APIRequestFactory
 
-from events.models import Event, Session, Error
+from events.models import Event, Session
 from events.views import EventModelViewSet
 
 
@@ -41,8 +41,8 @@ class EventModelViewSetTestCase(APITestCase):
         request = self.factory.post(self.list_url, self.new_event_data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], self.new_event_data['name'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Event will be created after validation')
 
     def test_create_event_without_session_id(self):
         data = {
@@ -58,8 +58,8 @@ class EventModelViewSetTestCase(APITestCase):
         request = self.factory.post(self.list_url, data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['session'][0], 'This field is required.')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Event will be created after validation')
 
     def test_create_event_future_timestamp(self):
         data = {
@@ -73,15 +73,11 @@ class EventModelViewSetTestCase(APITestCase):
             },
             'timestamp': timezone.now() + timedelta(1)
         }
-        initial_errors = Error.objects.all().count()
-        self.assertEqual(initial_errors, 0)
         request = self.factory.post(self.list_url, data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['timestamp'][0], 'The timestamp can\'t be greater than now.')
-        final_errors = Error.objects.all().count()
-        self.assertEqual(final_errors, 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Event will be created after validation')
 
     def test_create_event_empty_data(self):
         data = {
@@ -91,15 +87,11 @@ class EventModelViewSetTestCase(APITestCase):
             'data': {},
             'timestamp': timezone.now()
         }
-        initial_errors = Error.objects.all().count()
-        self.assertEqual(initial_errors, 0)
         request = self.factory.post(self.list_url, data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['data'][0], 'The data can\' be empty.')
-        final_errors = Error.objects.all().count()
-        self.assertEqual(final_errors, 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Event will be created after validation')
 
     def test_create_event_invalid_data(self):
         data = {
@@ -109,27 +101,19 @@ class EventModelViewSetTestCase(APITestCase):
             'data': 'invalid data',
             'timestamp': timezone.now()
         }
-        initial_errors = Error.objects.all().count()
-        self.assertEqual(initial_errors, 0)
         request = self.factory.post(self.list_url, data, format='json')
         view = EventModelViewSet.as_view({'post': 'create'})
         response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['data'][0], 'The data content must a JSON format.')
-        final_errors = Error.objects.all().count()
-        self.assertEqual(final_errors, 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Event will be created after validation')
 
     def test_list_events(self):
-        request = self.factory.post(self.list_url, self.new_event_data, format='json')
-        view = EventModelViewSet.as_view({'post': 'create'})
-        response = view(request)
-
         request = self.factory.get(self.list_url)
         view = EventModelViewSet.as_view({'get': 'list'})
         response = view(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(Event.objects.all().count(), 2)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(Event.objects.all().count(), 1)
 
     def test_retrieve_event(self):
         request = self.factory.get(self.detail_url, format='json')
