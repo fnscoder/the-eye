@@ -1,9 +1,11 @@
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from django_filters import rest_framework as filters
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from events.filters import EventFilterSet
 from events.models import Error, Event
 from events.serializers import ErrorSerializer, EventSerializer
+from events.tasks import create_event
 
 
 class EventModelViewSet(ModelViewSet):
@@ -15,6 +17,10 @@ class EventModelViewSet(ModelViewSet):
     def get_queryset(self):
         if self.action in ('list', 'retrieve'):
             return Event.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        create_event.delay(request.data)
+        return Response('Event will be created after validation')
 
 
 class ErrorModelViewSet(ReadOnlyModelViewSet):
