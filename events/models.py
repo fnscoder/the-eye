@@ -14,6 +14,7 @@ class Event(models.Model):
     name = models.CharField('name', max_length=150)
     data = models.JSONField('payload data')
     timestamp = models.DateTimeField('event datetime')
+    created_at = models.DateTimeField('created at', auto_now_add=True)
 
     def __str__(self):
         return f'{self.name}'

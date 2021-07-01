@@ -34,7 +34,7 @@ class EventSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('id', 'session', 'category', 'name', 'data', 'timestamp')
+        fields = ('id', 'session', 'category', 'name', 'data', 'timestamp', 'created_at')
 
 
 class ErrorSerializer(serializers.ModelSerializer):
